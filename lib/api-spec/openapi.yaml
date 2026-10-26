@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: telemetry
+    description: Event ingestion and drift monitoring
 paths:
   /healthz:
     get:
@@ -24,6 +26,71 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /ingest:
+    post:
+      operationId: ingestEvent
+      tags: [telemetry]
+      summary: Ingest a telemetry event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IngestInput"
+      responses:
+        "201":
+          description: Event stored and evaluated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TelemetryEvent"
+  /events:
+    get:
+      operationId: getEvents
+      tags: [telemetry]
+      summary: List recent telemetry events
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 40
+      responses:
+        "200":
+          description: Recent events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TelemetryEvent"
+  /status:
+    get:
+      operationId: getSystemStatus
+      tags: [telemetry]
+      summary: Get current system and quarantine state
+      responses:
+        "200":
+          description: Current telemetry status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStatus"
+  /quarantine/reset:
+    post:
+      operationId: resetQuarantine
+      tags: [telemetry]
+      summary: Release the quarantine lock
+      responses:
+        "200":
+          description: Updated system status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SystemStatus"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +100,46 @@ components:
           type: string
       required:
         - status
+    IngestInput:
+      type: object
+      required: [event_type, source, payload]
+      properties:
+        event_type:
+          type: string
+          enum: [system_log, user_input, database_transaction]
+        source:
+          type: string
+          minLength: 1
+          maxLength: 120
+        payload:
+          type: object
+          additionalProperties: true
+    TelemetryEvent:
+      type: object
+      required: [id, created_at, event_type, source, payload, drift_score, quarantined, intercept_reason]
+      properties:
+        id: { type: integer }
+        created_at: { type: string, format: date-time }
+        event_type:
+          type: string
+          enum: [system_log, user_input, database_transaction, air_gap_intercept]
+        source: { type: string }
+        payload:
+          type: object
+          additionalProperties: true
+        drift_score: { type: number }
+        quarantined: { type: boolean }
+        intercept_reason: { type: ["string", "null"] }
+    SystemStatus:
+      type: object
+      required: [state, event_count, intercepted_count, threshold, avg_latency_ms, last_event_at]
+      properties:
+        state:
+          type: string
+          enum: [active, quarantined]
+        event_count: { type: integer }
+        intercepted_count: { type: integer }
+        threshold: { type: number }
+        avg_latency_ms: { type: number }
+        last_event_at: { type: ["string", "null"], format: date-time }
 

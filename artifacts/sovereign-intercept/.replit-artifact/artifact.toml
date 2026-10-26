@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "The Sovereign Intercept Layer"
+description = "An offline-first telemetry console with a Python FastAPI ingestion service, deterministic 15% drift detection, quarantine controls, and locally persisted SQLite event history."
+version = "1.0.0"
+id = "artifacts/sovereign-intercept"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22174
+
+[services.development]
+run = "pnpm --filter @workspace/sovereign-intercept run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sovereign-intercept", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/sovereign-intercept/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22174"
+BASE_PATH = "/"

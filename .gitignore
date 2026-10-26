@@ -16,6 +16,13 @@ out-tsc
 
 # dependencies
 node_modules
+.pythonlibs/
+.venv/
+
+# Python cache and local telemetry database
+__pycache__/
+*.py[cod]
+artifacts/api-server/data/
 
 # IDEs and editors
 /.idea

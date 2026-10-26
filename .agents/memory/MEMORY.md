@@ -1,0 +1,1 @@
+- [Offline telemetry storage](offline-telemetry-storage.md) — telemetry events and quarantine state must remain in local SQLite for offline operation.
